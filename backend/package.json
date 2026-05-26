@@ -1,0 +1,34 @@
+{
+  "name": "voltex-backend",
+  "version": "1.0.0",
+  "description": "VoltEX - Electronics and Gadgets E-Commerce Store Backend",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "seed": "node src/scripts/seedData.js"
+  },
+  "keywords": [
+    "ecommerce",
+    "electronics",
+    "gadgets"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "mongoose": "^7.0.0",
+    "jsonwebtoken": "^9.0.0",
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^16.0.3",
+    "cors": "^2.8.5",
+    "express-validator": "^7.0.0",
+    "razorpay": "^2.9.1",
+    "nodemailer": "^6.9.1",
+    "multer": "^1.4.5-lts.1"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.20"
+  }
+}

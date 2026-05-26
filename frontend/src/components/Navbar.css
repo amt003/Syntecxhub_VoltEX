@@ -1,0 +1,168 @@
+.navbar {
+  background: linear-gradient(to right, #ffffff, #f8f9fa);
+  color: #1f2937;
+  padding: 1.2rem 0;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.08);
+  border-bottom: 1px solid #e5e7eb;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.navbar-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 3rem;
+}
+
+.navbar-brand {
+  text-decoration: none;
+  color: #1f2937;
+  flex-shrink: 0;
+}
+
+.navbar-brand h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.5px;
+}
+
+.navbar-menu {
+  display: flex;
+  gap: 3rem;
+  flex: 1;
+  justify-content: center;
+}
+
+.nav-link {
+  color: #4b5563;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+  position: relative;
+  padding: 0.5rem 0;
+}
+
+.nav-link::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: linear-gradient(to right, #667eea, #764ba2);
+  transition: width 0.3s ease;
+}
+
+.nav-link:hover {
+  color: #667eea;
+}
+
+.nav-link:hover::after {
+  width: 100%;
+}
+
+.navbar-right {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  flex-shrink: 0;
+}
+
+.cart-link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  color: #4b5563;
+  transition: all 0.3s ease;
+  font-weight: 500;
+}
+
+.cart-link:hover {
+  color: #667eea;
+  transform: scale(1.1);
+}
+
+.cart-badge {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: bold;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+}
+
+.user-menu {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #4b5563;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.admin-link {
+  color: white;
+  text-decoration: none;
+  font-weight: 600;
+  background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+  font-size: 0.9rem;
+}
+
+.admin-link:hover {
+  color: #f59e0b;
+}
+
+.logout-btn {
+  background-color: #ef4444;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: background-color 0.3s;
+}
+
+.logout-btn:hover {
+  background-color: #dc2626;
+}
+
+.auth-links {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}

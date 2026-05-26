@@ -1,0 +1,24 @@
+{
+  "name": "voltex",
+  "version": "1.0.0",
+  "description": "VoltEX - Electronics and Gadgets E-Commerce Store",
+  "private": true,
+  "scripts": {
+    "install-all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+    "dev": "concurrently \"cd backend && npm run dev\" \"cd frontend && npm start\"",
+    "backend": "cd backend && npm run dev",
+    "frontend": "cd frontend && npm start",
+    "build": "cd backend && npm install && cd ../frontend && npm run build",
+    "start": "node backend/src/index.js"
+  },
+  "keywords": [
+    "ecommerce",
+    "electronics",
+    "gadgets"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.0.1"
+  }
+}
