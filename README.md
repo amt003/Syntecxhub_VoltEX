@@ -370,8 +370,6 @@ Note: Remember to create these accounts through the registration endpoint or man
 ## Future Enhancements
 
 - [ ] Email notifications for orders
-- [x] Payment gateway integration (Razorpay)
-- [ ] Product reviews and ratings
 - [ ] Wishlist feature
 - [ ] Inventory management
 - [ ] Advanced analytics
