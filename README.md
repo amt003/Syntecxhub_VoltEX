@@ -370,8 +370,6 @@ Note: Remember to create these accounts through the registration endpoint or man
 ## Future Enhancements
 
 - [ ] Email notifications for orders
-- [x] Payment gateway integration (Razorpay)
-- [ ] Product reviews and ratings
 - [ ] Wishlist feature
 - [ ] Inventory management
 - [ ] Advanced analytics
@@ -380,40 +378,6 @@ Note: Remember to create these accounts through the registration endpoint or man
 - [ ] SMS notifications
 - [ ] Real-time order tracking
 
-## Support & Troubleshooting
-
-### Common Issues
-
-**MongoDB Connection Error**
-
-- Ensure MongoDB is running locally or check Atlas connection string
-- Verify IP whitelist in MongoDB Atlas
-
-**CORS Error**
-
-- Ensure backend is running on correct port
-- Check CORS configuration in Express server
-- Verify frontend API URL in environment variables
-
-**JWT Token Issues**
-
-- Clear browser localStorage
-- Check token expiration time
-- Verify JWT_SECRET matches on backend
-
-**Port Already in Use**
-
-- Change PORT in .env or kill process using that port
-- On Windows: `netstat -ano | findstr :5000`
-- On Mac/Linux: `lsof -i :5000`
-
-## License
-
-MIT
-
-## Contact & Support
-
-For issues, questions, or suggestions, please create an issue in the repository.
 
 ---
 
