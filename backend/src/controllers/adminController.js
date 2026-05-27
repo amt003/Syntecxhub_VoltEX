@@ -5,7 +5,8 @@ import User from "../models/User.js";
 // Product Management
 export const createProduct = async (req, res) => {
   try {
-    const { name, description, price, category, brand, stock } = req.body;
+    const { name, description, price, category, brand, stock, specifications } =
+      req.body;
 
     // Check if files were uploaded
     if (!req.files || req.files.length === 0) {
@@ -20,6 +21,16 @@ export const createProduct = async (req, res) => {
     );
     const image = images[0]; // Primary image is the first one
 
+    // Parse specifications if provided
+    let specsObject = {};
+    if (specifications) {
+      try {
+        specsObject = JSON.parse(specifications);
+      } catch (e) {
+        console.error("Error parsing specifications:", e);
+      }
+    }
+
     const product = await Product.create({
       name,
       description,
@@ -29,6 +40,7 @@ export const createProduct = async (req, res) => {
       stock,
       image,
       images,
+      specifications: specsObject,
     });
 
     res.status(201).json({
@@ -63,6 +75,18 @@ export const updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
+
+    // Parse specifications if provided as JSON string
+    if (
+      updateData.specifications &&
+      typeof updateData.specifications === "string"
+    ) {
+      try {
+        updateData.specifications = JSON.parse(updateData.specifications);
+      } catch (e) {
+        console.error("Error parsing specifications:", e);
+      }
+    }
 
     // If files were uploaded, update the image paths
     if (req.files && req.files.length > 0) {
@@ -163,7 +187,17 @@ export const updateOrderStatus = async (req, res) => {
       return res.status(400).json({ message: "Invalid status" });
     }
 
-    const order = await Order.findByIdAndUpdate(id, { status }, { new: true });
+    // Build update object
+    const updateData = { status };
+
+    // Automatically update payment status based on order status
+    if (status === "confirmed") {
+      updateData.paymentStatus = "completed";
+    } else if (status === "cancelled") {
+      updateData.paymentStatus = "failed";
+    }
+
+    const order = await Order.findByIdAndUpdate(id, updateData, { new: true });
 
     if (!order) {
       return res.status(404).json({ message: "Order not found" });

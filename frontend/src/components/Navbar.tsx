@@ -23,12 +23,14 @@ function Navbar() {
         </Link>
 
         <div className="navbar-right">
-          <Link to="/cart" className="cart-link">
-            <ShoppingCart size={24} />
-            {items.length > 0 && (
-              <span className="cart-badge">{items.length}</span>
-            )}
-          </Link>
+          {isAuthenticated && user?.role !== "admin" && (
+            <Link to="/cart" className="cart-link">
+              <ShoppingCart size={24} />
+              {items.length > 0 && (
+                <span className="cart-badge">{items.length}</span>
+              )}
+            </Link>
+          )}
 
           {isAuthenticated ? (
             <div className="user-menu">
@@ -41,9 +43,11 @@ function Navbar() {
                   Admin
                 </Link>
               )}
-              <Link to="/orders" className="nav-link">
-                Orders
-              </Link>
+              {user?.role !== "admin" && (
+                <Link to="/orders" className="nav-link">
+                  Orders
+                </Link>
+              )}
               <button onClick={handleLogout} className="logout-btn">
                 <LogOut size={20} /> Logout
               </button>

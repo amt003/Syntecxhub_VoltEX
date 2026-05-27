@@ -16,6 +16,7 @@ interface RecentOrder {
   userId: { name: string; email: string };
   totalAmount: number;
   status: string;
+  paymentStatus: string;
   createdAt: string;
 }
 
@@ -30,6 +31,22 @@ interface Product {
   image: string;
   images: string[];
   featured?: boolean;
+  specifications?: Record<string, string>;
+}
+
+interface Specification {
+  key: string;
+  value: string;
+}
+
+interface ProductErrors {
+  name?: string;
+  description?: string;
+  price?: string;
+  category?: string;
+  brand?: string;
+  stock?: string;
+  images?: string;
 }
 
 const CATEGORIES = [
@@ -63,6 +80,10 @@ function AdminDashboard() {
     images: [] as File[],
   });
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [newSpecs, setNewSpecs] = useState<Specification[]>([]);
+  const [editSpecs, setEditSpecs] = useState<Specification[]>([]);
+  const [newProductErrors, setNewProductErrors] = useState<ProductErrors>({});
+  const [editProductErrors, setEditProductErrors] = useState<ProductErrors>({});
 
   const fetchProducts = useCallback(async () => {
     try {
@@ -95,6 +116,72 @@ function AdminDashboard() {
       setLoading(false);
     }
   };
+
+  // Product Validation Functions
+  const validateProductField = (
+    fieldName: string,
+    value: string | number,
+  ): string | null => {
+    switch (fieldName) {
+      case "name":
+        if (!String(value).trim()) return "Product name is required";
+        if (String(value).trim().length < 3)
+          return "Product name must be at least 3 characters";
+        return null;
+      case "description":
+        if (!String(value).trim()) return "Description is required";
+        if (String(value).trim().length < 10)
+          return "Description must be at least 10 characters";
+        return null;
+      case "price":
+        const priceNum = Number(value);
+        if (isNaN(priceNum) || priceNum <= 0)
+          return "Price must be greater than 0";
+        return null;
+      case "category":
+        if (!String(value).trim()) return "Please select a category";
+        return null;
+      case "brand":
+        if (String(value).trim() && String(value).trim().length < 2)
+          return "Brand name must be at least 2 characters";
+        return null;
+      case "stock":
+        const stockNum = Number(value);
+        if (isNaN(stockNum) || stockNum < 0)
+          return "Stock must be 0 or greater";
+        return null;
+      default:
+        return null;
+    }
+  };
+
+  // Real-time validation for new product form
+  useEffect(() => {
+    const errors: ProductErrors = {};
+
+    if (newProduct.name)
+      if (validateProductField("name", newProduct.name))
+        errors.name = validateProductField("name", newProduct.name) || "";
+    if (newProduct.description)
+      if (validateProductField("description", newProduct.description))
+        errors.description =
+          validateProductField("description", newProduct.description) || "";
+    if (newProduct.price > 0)
+      if (validateProductField("price", newProduct.price))
+        errors.price = validateProductField("price", newProduct.price) || "";
+    if (newProduct.category)
+      if (validateProductField("category", newProduct.category))
+        errors.category =
+          validateProductField("category", newProduct.category) || "";
+    if (newProduct.brand)
+      if (validateProductField("brand", newProduct.brand))
+        errors.brand = validateProductField("brand", newProduct.brand) || "";
+    if (newProduct.stock >= 0)
+      if (validateProductField("stock", newProduct.stock))
+        errors.stock = validateProductField("stock", newProduct.stock) || "";
+
+    setNewProductErrors(errors);
+  }, [newProduct]);
 
   const handleProductChange = (
     e: React.ChangeEvent<
@@ -156,8 +243,40 @@ function AdminDashboard() {
   const handleAddProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      // Validate all fields
+      const errors: ProductErrors = {};
+
+      const nameError = validateProductField("name", newProduct.name);
+      if (nameError) errors.name = nameError;
+
+      const descError = validateProductField(
+        "description",
+        newProduct.description,
+      );
+      if (descError) errors.description = descError;
+
+      const priceError = validateProductField("price", newProduct.price);
+      if (priceError) errors.price = priceError;
+
+      const catError = validateProductField("category", newProduct.category);
+      if (catError) errors.category = catError;
+
+      if (newProduct.brand) {
+        const brandError = validateProductField("brand", newProduct.brand);
+        if (brandError) errors.brand = brandError;
+      }
+
+      const stockError = validateProductField("stock", newProduct.stock);
+      if (stockError) errors.stock = stockError;
+
       if (newProduct.images.length === 0) {
-        toast.error("Please select at least one image (up to 4)");
+        errors.images = "Please select at least one image (up to 4)";
+      }
+
+      setNewProductErrors(errors);
+
+      if (Object.keys(errors).length > 0) {
+        toast.error("Please fix all validation errors");
         return;
       }
 
@@ -175,6 +294,20 @@ function AdminDashboard() {
         formData.append("images", image);
       });
 
+      // Append specifications as JSON
+      const specsObj = newSpecs.reduce(
+        (acc, spec) => {
+          if (spec.key.trim()) {
+            acc[spec.key] = spec.value;
+          }
+          return acc;
+        },
+        {} as Record<string, string>,
+      );
+      if (Object.keys(specsObj).length > 0) {
+        formData.append("specifications", JSON.stringify(specsObj));
+      }
+
       await adminService.createProduct(formData);
       toast.success("Product added successfully");
       setNewProduct({
@@ -187,6 +320,7 @@ function AdminDashboard() {
         images: [],
       });
       setImagePreviews([]);
+      setNewSpecs([]);
       fetchProducts();
     } catch (error) {
       console.error("Error adding product:", error);
@@ -198,7 +332,52 @@ function AdminDashboard() {
     setEditingProduct(product);
     setEditingImages([]);
     setEditImagePreviews([]);
+    // Convert specifications object to array format
+    if (product.specifications) {
+      const specsArray = Object.entries(product.specifications).map(
+        ([key, value]) => ({ key, value }),
+      );
+      setEditSpecs(specsArray);
+    } else {
+      setEditSpecs([]);
+    }
     setShowEditModal(true);
+  };
+
+  const handleAddSpecRow = () => {
+    setNewSpecs([...newSpecs, { key: "", value: "" }]);
+  };
+
+  const handleRemoveNewSpecRow = (index: number) => {
+    setNewSpecs(newSpecs.filter((_, i) => i !== index));
+  };
+
+  const handleNewSpecChange = (
+    index: number,
+    field: "key" | "value",
+    value: string,
+  ) => {
+    const updatedSpecs = [...newSpecs];
+    updatedSpecs[index][field] = value;
+    setNewSpecs(updatedSpecs);
+  };
+
+  const handleAddEditSpecRow = () => {
+    setEditSpecs([...editSpecs, { key: "", value: "" }]);
+  };
+
+  const handleRemoveEditSpecRow = (index: number) => {
+    setEditSpecs(editSpecs.filter((_, i) => i !== index));
+  };
+
+  const handleEditSpecChange = (
+    index: number,
+    field: "key" | "value",
+    value: string,
+  ) => {
+    const updatedSpecs = [...editSpecs];
+    updatedSpecs[index][field] = value;
+    setEditSpecs(updatedSpecs);
   };
 
   const handleEditImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -247,6 +426,42 @@ function AdminDashboard() {
     if (!editingProduct) return;
 
     try {
+      // Validate all fields
+      const errors: ProductErrors = {};
+
+      const nameError = validateProductField("name", editingProduct.name);
+      if (nameError) errors.name = nameError;
+
+      const descError = validateProductField(
+        "description",
+        editingProduct.description,
+      );
+      if (descError) errors.description = descError;
+
+      const priceError = validateProductField("price", editingProduct.price);
+      if (priceError) errors.price = priceError;
+
+      const catError = validateProductField(
+        "category",
+        editingProduct.category,
+      );
+      if (catError) errors.category = catError;
+
+      if (editingProduct.brand) {
+        const brandError = validateProductField("brand", editingProduct.brand);
+        if (brandError) errors.brand = brandError;
+      }
+
+      const stockError = validateProductField("stock", editingProduct.stock);
+      if (stockError) errors.stock = stockError;
+
+      setEditProductErrors(errors);
+
+      if (Object.keys(errors).length > 0) {
+        toast.error("Please fix all validation errors");
+        return;
+      }
+
       // If new images are uploaded, use FormData; otherwise use regular object
       if (editingImages.length > 0) {
         const formData = new FormData();
@@ -266,10 +481,34 @@ function AdminDashboard() {
           formData.append("images", image);
         });
 
+        // Append specifications as JSON
+        const specsObj = editSpecs.reduce(
+          (acc, spec) => {
+            if (spec.key.trim()) {
+              acc[spec.key] = spec.value;
+            }
+            return acc;
+          },
+          {} as Record<string, string>,
+        );
+        if (Object.keys(specsObj).length > 0) {
+          formData.append("specifications", JSON.stringify(specsObj));
+        }
+
         await adminService.updateProduct(editingProduct._id, formData);
       } else {
         // Update without images
-        const updateData = {
+        const specsObj = editSpecs.reduce(
+          (acc, spec) => {
+            if (spec.key.trim()) {
+              acc[spec.key] = spec.value;
+            }
+            return acc;
+          },
+          {} as Record<string, string>,
+        );
+
+        const updateData: any = {
           name: editingProduct.name,
           description: editingProduct.description,
           price: editingProduct.price,
@@ -279,6 +518,10 @@ function AdminDashboard() {
           featured: editingProduct.featured || false,
         };
 
+        if (Object.keys(specsObj).length > 0) {
+          updateData.specifications = specsObj;
+        }
+
         await adminService.updateProduct(editingProduct._id, updateData);
       }
       toast.success("Product updated successfully");
@@ -286,6 +529,7 @@ function AdminDashboard() {
       setEditingProduct(null);
       setEditingImages([]);
       setEditImagePreviews([]);
+      setEditSpecs([]);
       fetchProducts();
     } catch (error) {
       console.error("Error updating product:", error);
@@ -398,6 +642,7 @@ function AdminDashboard() {
                       <th>Customer</th>
                       <th>Amount</th>
                       <th>Status</th>
+                      <th>Payment</th>
                       <th>Date</th>
                     </tr>
                   </thead>
@@ -412,6 +657,13 @@ function AdminDashboard() {
                             className={`status-badge status-${order.status}`}
                           >
                             {order.status}
+                          </span>
+                        </td>
+                        <td>
+                          <span
+                            className={`status-badge payment-${order.paymentStatus}`}
+                          >
+                            {order.paymentStatus}
                           </span>
                         </td>
                         <td>
@@ -440,8 +692,15 @@ function AdminDashboard() {
                         name="name"
                         value={newProduct.name}
                         onChange={handleProductChange}
+                        placeholder="Enter product name"
+                        className={newProductErrors.name ? "input-error" : ""}
                         required
                       />
+                      {newProductErrors.name && (
+                        <span className="error-message">
+                          {newProductErrors.name}
+                        </span>
+                      )}
                     </div>
 
                     <div className="form-group">
@@ -451,7 +710,14 @@ function AdminDashboard() {
                         name="brand"
                         value={newProduct.brand}
                         onChange={handleProductChange}
+                        placeholder="Enter brand name"
+                        className={newProductErrors.brand ? "input-error" : ""}
                       />
+                      {newProductErrors.brand && (
+                        <span className="error-message">
+                          {newProductErrors.brand}
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -461,8 +727,17 @@ function AdminDashboard() {
                       name="description"
                       value={newProduct.description}
                       onChange={handleProductChange}
+                      placeholder="Enter detailed product description (min 10 characters)"
+                      className={
+                        newProductErrors.description ? "input-error" : ""
+                      }
                       required
                     />
+                    {newProductErrors.description && (
+                      <span className="error-message">
+                        {newProductErrors.description}
+                      </span>
+                    )}
                   </div>
 
                   <div className="form-row">
@@ -473,8 +748,15 @@ function AdminDashboard() {
                         name="price"
                         value={newProduct.price}
                         onChange={handleProductChange}
+                        placeholder="Enter price"
+                        className={newProductErrors.price ? "input-error" : ""}
                         required
                       />
+                      {newProductErrors.price && (
+                        <span className="error-message">
+                          {newProductErrors.price}
+                        </span>
+                      )}
                     </div>
 
                     <div className="form-group">
@@ -483,6 +765,9 @@ function AdminDashboard() {
                         name="category"
                         value={newProduct.category}
                         onChange={handleProductChange}
+                        className={
+                          newProductErrors.category ? "input-error" : ""
+                        }
                         required
                       >
                         <option value="">Select Category</option>
@@ -494,6 +779,11 @@ function AdminDashboard() {
                         <option value="wearables">Wearables</option>
                         <option value="gaming">Gaming</option>
                       </select>
+                      {newProductErrors.category && (
+                        <span className="error-message">
+                          {newProductErrors.category}
+                        </span>
+                      )}
                     </div>
 
                     <div className="form-group">
@@ -503,8 +793,15 @@ function AdminDashboard() {
                         name="stock"
                         value={newProduct.stock}
                         onChange={handleProductChange}
+                        placeholder="Enter stock quantity"
+                        className={newProductErrors.stock ? "input-error" : ""}
                         required
                       />
+                      {newProductErrors.stock && (
+                        <span className="error-message">
+                          {newProductErrors.stock}
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -521,6 +818,11 @@ function AdminDashboard() {
                       multiple
                       required
                     />
+                    {newProductErrors.images && (
+                      <span className="error-message">
+                        {newProductErrors.images}
+                      </span>
+                    )}
                     {imagePreviews.length > 0 && (
                       <div className="image-previews">
                         {imagePreviews.map((preview, index) => (
@@ -533,7 +835,82 @@ function AdminDashboard() {
                     )}
                   </div>
 
-                  <button type="submit" className="submit-btn">
+                  <div className="form-group">
+                    <label>Specifications</label>
+                    <table className="specs-table">
+                      <thead>
+                        <tr>
+                          <th>Key</th>
+                          <th>Value</th>
+                          <th>Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {newSpecs.map((spec, index) => (
+                          <tr key={index}>
+                            <td>
+                              <input
+                                type="text"
+                                value={spec.key}
+                                onChange={(e) =>
+                                  handleNewSpecChange(
+                                    index,
+                                    "key",
+                                    e.target.value,
+                                  )
+                                }
+                                placeholder="e.g., Storage, RAM, Display"
+                              />
+                            </td>
+                            <td>
+                              <input
+                                type="text"
+                                value={spec.value}
+                                onChange={(e) =>
+                                  handleNewSpecChange(
+                                    index,
+                                    "value",
+                                    e.target.value,
+                                  )
+                                }
+                                placeholder="e.g., 256GB, 12GB, 6.2 inch"
+                              />
+                            </td>
+                            <td>
+                              <button
+                                type="button"
+                                className="delete-spec-btn"
+                                onClick={() => handleRemoveNewSpecRow(index)}
+                              >
+                                Remove
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    <button
+                      type="button"
+                      className="add-spec-btn"
+                      onClick={handleAddSpecRow}
+                    >
+                      + Add Specification
+                    </button>
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="submit-btn"
+                    disabled={
+                      Object.keys(newProductErrors).length > 0 ||
+                      !newProduct.name ||
+                      !newProduct.description ||
+                      newProduct.price <= 0 ||
+                      !newProduct.category ||
+                      newProduct.stock < 0 ||
+                      newProduct.images.length === 0
+                    }
+                  >
                     Add Product
                   </button>
                 </form>
@@ -658,8 +1035,15 @@ function AdminDashboard() {
                             name: e.target.value,
                           })
                         }
+                        placeholder="Enter product name"
+                        className={editProductErrors.name ? "input-error" : ""}
                         required
                       />
+                      {editProductErrors.name && (
+                        <span className="error-message">
+                          {editProductErrors.name}
+                        </span>
+                      )}
                     </div>
 
                     <div className="form-group">
@@ -673,7 +1057,14 @@ function AdminDashboard() {
                             brand: e.target.value,
                           })
                         }
+                        placeholder="Enter brand name"
+                        className={editProductErrors.brand ? "input-error" : ""}
                       />
+                      {editProductErrors.brand && (
+                        <span className="error-message">
+                          {editProductErrors.brand}
+                        </span>
+                      )}
                     </div>
 
                     <div className="form-group">
@@ -686,8 +1077,17 @@ function AdminDashboard() {
                             description: e.target.value,
                           })
                         }
+                        placeholder="Enter detailed product description (min 10 characters)"
+                        className={
+                          editProductErrors.description ? "input-error" : ""
+                        }
                         required
                       />
+                      {editProductErrors.description && (
+                        <span className="error-message">
+                          {editProductErrors.description}
+                        </span>
+                      )}
                     </div>
 
                     <div className="form-row">
@@ -702,8 +1102,17 @@ function AdminDashboard() {
                               price: parseFloat(e.target.value),
                             })
                           }
+                          placeholder="Enter price"
+                          className={
+                            editProductErrors.price ? "input-error" : ""
+                          }
                           required
                         />
+                        {editProductErrors.price && (
+                          <span className="error-message">
+                            {editProductErrors.price}
+                          </span>
+                        )}
                       </div>
 
                       <div className="form-group">
@@ -717,8 +1126,17 @@ function AdminDashboard() {
                               stock: parseInt(e.target.value),
                             })
                           }
+                          placeholder="Enter stock quantity"
+                          className={
+                            editProductErrors.stock ? "input-error" : ""
+                          }
                           required
                         />
+                        {editProductErrors.stock && (
+                          <span className="error-message">
+                            {editProductErrors.stock}
+                          </span>
+                        )}
                       </div>
                     </div>
 
@@ -732,6 +1150,9 @@ function AdminDashboard() {
                             category: e.target.value,
                           })
                         }
+                        className={
+                          editProductErrors.category ? "input-error" : ""
+                        }
                         required
                       >
                         {CATEGORIES.map((cat) => (
@@ -740,6 +1161,11 @@ function AdminDashboard() {
                           </option>
                         ))}
                       </select>
+                      {editProductErrors.category && (
+                        <span className="error-message">
+                          {editProductErrors.category}
+                        </span>
+                      )}
                     </div>
 
                     <div className="form-group">
@@ -790,6 +1216,69 @@ function AdminDashboard() {
                         </div>
                       )}
 
+                    <div className="form-group">
+                      <label>Specifications</label>
+                      <table className="specs-table">
+                        <thead>
+                          <tr>
+                            <th>Key</th>
+                            <th>Value</th>
+                            <th>Action</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {editSpecs.map((spec, index) => (
+                            <tr key={index}>
+                              <td>
+                                <input
+                                  type="text"
+                                  value={spec.key}
+                                  onChange={(e) =>
+                                    handleEditSpecChange(
+                                      index,
+                                      "key",
+                                      e.target.value,
+                                    )
+                                  }
+                                  placeholder="e.g., Storage, RAM, Display"
+                                />
+                              </td>
+                              <td>
+                                <input
+                                  type="text"
+                                  value={spec.value}
+                                  onChange={(e) =>
+                                    handleEditSpecChange(
+                                      index,
+                                      "value",
+                                      e.target.value,
+                                    )
+                                  }
+                                  placeholder="e.g., 256GB, 12GB, 6.2 inch"
+                                />
+                              </td>
+                              <td>
+                                <button
+                                  type="button"
+                                  className="delete-spec-btn"
+                                  onClick={() => handleRemoveEditSpecRow(index)}
+                                >
+                                  Remove
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                      <button
+                        type="button"
+                        className="add-spec-btn"
+                        onClick={handleAddEditSpecRow}
+                      >
+                        + Add Specification
+                      </button>
+                    </div>
+
                     <div className="form-group checkbox">
                       <label>
                         <input
@@ -807,7 +1296,18 @@ function AdminDashboard() {
                     </div>
 
                     <div className="modal-actions">
-                      <button type="submit" className="submit-btn">
+                      <button
+                        type="submit"
+                        className="submit-btn"
+                        disabled={
+                          Object.keys(editProductErrors).length > 0 ||
+                          !editingProduct.name ||
+                          !editingProduct.description ||
+                          editingProduct.price <= 0 ||
+                          !editingProduct.category ||
+                          editingProduct.stock < 0
+                        }
+                      >
                         Update Product
                       </button>
                       <button
@@ -851,7 +1351,13 @@ function AdminDashboard() {
                           {order.status}
                         </span>
                       </td>
-                      <td>Pending</td>
+                      <td>
+                        <span
+                          className={`status-badge payment-${order.paymentStatus}`}
+                        >
+                          {order.paymentStatus}
+                        </span>
+                      </td>
                       <td>{new Date(order.createdAt).toLocaleDateString()}</td>
                     </tr>
                   ))}
